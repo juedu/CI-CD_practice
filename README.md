@@ -1,0 +1,45 @@
+# 프로젝트 개요
+
+## 서버 어플리케이션
+
+### 사용 언어 및 프레임워크
+- **언어**: Java
+- **프레임워크**: Spring Boot
+- **개발 환경**: Windows, Visual Studio Code
+
+## 환경 설정
+- **Dev (개발)**: 로컬 윈도우 환경에서 개발, 테스트
+- **Staging (스테이징)**: 프로덕션과 유사한 환경에서의 추가적인 테스트 및 검증
+- **Prod (프로덕션)**: 실제 사용자가 사용하는 환경
+
+---
+
+# 전략
+
+## STEP 01: 웹 서버 생성
+- Spring Boot 프로젝트 생성 및 기본 설정
+- Health-Check Endpoint (`/actuator/health`) 구현
+- 환경 설정 (`application.properties` 또는 `application.yml`): `dev`, `prod`
+
+## STEP 02: 빌드 환경 구축
+- Docker를 사용한 컨테이너화 및 이미지 빌드
+- Dockerfile 작성 및 로컬 환경에서 테스트
+- GitHub Actions를 활용한 CI/CD 파이프라인 구축
+  - 코드 Push, PR 시 자동 빌드 및 테스트
+  - Lint, Test Coverage 등의 추가적인 검증 단계 포함
+  - 환경(`dev`, `stg`, `prod`)별 파이프라인 구성
+
+## STEP 03: 배포 환경 구축
+- AWS ECR 및 ECS Fargate 사용
+- Docker 이미지 ECR에 업로드
+- ECS Fargate를 통한 서비스 배포 및 관리
+- 보안 및 리소스 관리를 위한 IAM 사용자 설정
+- GitHub Actions의 Secret을 활용한 보안 정보 관리
+
+---
+
+# 추가 정보
+- 프로젝트 관련 문서, 설정 파일, 코드 등은 본 GitHub 저장소에서 관리됩니다.
+- 로컬 환경에 너무 많은 다른 서버들이 세팅되어있어서 본 프로젝트의 기본 포트는 9090으로 진행합니다.
+
+---
