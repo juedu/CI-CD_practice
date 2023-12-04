@@ -7,12 +7,27 @@
 - **프레임워크**: Spring Boot
 - **개발 환경**: Windows, Visual Studio Code
 
-## 환경 설정
-- **Dev (개발)**: 로컬 윈도우 환경에서 개발, 테스트
-- **Staging (스테이징)**: 프로덕션과 유사한 환경에서의 추가적인 테스트 및 검증
-- **Prod (프로덕션)**: 실제 사용자가 사용하는 환경
+## STEP 01: 웹 서버 생성
+
+1. **프로젝트 생성 및 초기 설정**:
+   - **Spring Boot 프로젝트 생성**: Spring Initializr([start.spring.io](https://start.spring.io/))를 사용하여 기본 설정을 완료합니다. 필요한 의존성으로는 'Spring Web', 'Spring Boot Actuator'를 선택합니다.
+   - **프로젝트 Import**: 생성된 프로젝트를 vscode 로 가져오고 GRADLE 등 확장프로그램을 설치합니다..
+
+2. **Health-Check Router 구현**:
+   - **Spring Boot Actuator 추가**: `pom.xml` 또는 `build.gradle`에 Spring Boot Actuator 의존성을 추가합니다.
+   - **Health Endpoint 활성화**: `application.properties` 또는 `application.yml`에 Actuator의 health endpoint를 활성화하는 설정을 추가합니다.
+
+3. **개발(dev) 및 운영(prod) 환경 설정**:
+   - **프로파일 설정**: `application-dev.properties`와 `application-prod.properties` 파일을 생성하여 각 환경에 맞는 설정을 정의합니다.
+   - **환경 변수 설정**: AWS EC2 인스턴스에서 환경 변수를 설정하여, 해당 환경에 맞는 프로파일을 활성화합니다. 예를 들어, `SPRING_PROFILES_ACTIVE=prod` 설정을 통해 운영 환경을 활성화할 수 있습니다.
+
+### 환경 설정
+- **Dev (개발)**: 로컬 윈도우 환경에서 개발 및 테스트를 진행합니다. IDE를 통해 애플리케이션을 실행하고, `application-dev.properties`에 정의된 설정을 사용합니다.
+- **Staging (스테이징)**: 프로덕션과 유사한 환경에서 추가적인 테스트 및 검증을 위해 `stg` 브랜치와 연동된 자동화된 파이프라인을 통해 배포합니다.
+- **Prod (프로덕션)**: 실제 사용자가 사용하는 환경으로, `prod` 브랜치에서 최종적으로 배포되며, `application-prod.properties`에 정의된 설정을 사용합니다.
 
 ---
+
 
 # 전략
 
