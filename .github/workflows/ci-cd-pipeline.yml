@@ -10,25 +10,29 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
-
+      
     - name: Build Docker image
-      run: docker build -t ${{ secrets.ECR_REGISTRY }}/myapp:${{ github.sha }} .
-
+      run: |
+        docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cicd:${{ github.ref_name }} .
+      
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+      
     - name: Push Docker image to ECR
       run: |
-        echo ${{ secrets.AWS_ACCESS_KEY_ID }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-        docker push ${{ secrets.ECR_REGISTRY }}/myapp:${{ github.sha }}
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cicd:${{ github.ref_name }}
 
-    # 아래의 단계들은 환경에 따라 ECS 서비스를 업데이트하는 방법을 보여줍니다.
-    # 각 환경에 대한 조건부 로직을 사용하여 필요한 단계를 실행합니다.
-    - name: Deploy to Dev
-      if: github.ref == 'refs/heads/develop'
-      run: # Dev 환경에 배포하는 AWS CLI 명령어를 여기에 추가합니다.
+    - name: Deploy to ECS Dev
+      if: github.ref == 'refs/heads/dev'
+      run: |
+        aws ecs update-service --cluster CICD_dev --service cicd-service-dev --force-new-deployment --region ${{ secrets.AWS_REGION }}
 
-    - name: Deploy to Staging
-      if: github.ref == 'refs/heads/staging'
-      run: # Staging 환경에 배포하는 AWS CLI 명령어를 여기에 추가합니다.
+    - name: Deploy to ECS Staging
+      if: github.ref == 'refs/heads/stg'
+      run: |
+        aws ecs update-service --cluster CICD_stg --service cicd-service-stg --force-new-deployment --region ${{ secrets.AWS_REGION }}
 
-    - name: Deploy to Prod
+    - name: Deploy to ECS Prod
       if: github.ref == 'refs/heads/prod'
-      run: # Prod 환경에 배포하는 AWS CLI 명령어를 여기에 추가합니다.
+      run: |
+        aws ecs update-service --cluster CICD_prod --service cicd-service-prod --force-new-deployment --region ${{ secrets.AWS_REGION }}
