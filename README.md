@@ -1,60 +1,131 @@
-# 프로젝트 개요
+# CI/CD Practice
 
-## 서버 어플리케이션
+Spring Boot 애플리케이션을 GitHub Actions, Docker, AWS (ECR + ECS Fargate)로 자동 배포하는 CI/CD 파이프라인 학습 프로젝트입니다.
 
-### 사용 언어 및 프레임워크
-- **언어**: Java
-- **프레임워크**: Spring Boot
-- **개발 환경**: Windows, Visual Studio Code
+## 파이프라인 구조
+
+```
+ Push (stg/prod)
+       │
+       ▼
+ GitHub Actions
+  ┌────────────────────────┐
+  │ 1. Checkout            │
+  │ 2. JDK 17 Setup        │
+  │ 3. Gradle Build        │
+  │ 4. Docker Image Build   │
+  │ 5. ECR Login & Push     │
+  │ 6. ECS Force Deploy     │
+  └────────────────────────┘
+       │
+       ├── stg branch → ECS Cluster (Staging)
+       └── prod branch → ECS Cluster (Production)
+```
+
+## 기술 스택
+
+| 구성 요소 | 기술 |
+|-----------|------|
+| 언어 | Java 17 |
+| 프레임워크 | Spring Boot 3.2 |
+| 빌드 | Gradle |
+| 컨테이너 | Docker |
+| CI/CD | GitHub Actions |
+| 레지스트리 | AWS ECR |
+| 배포 | AWS ECS Fargate |
+| 헬스체크 | Spring Boot Actuator |
+
+## 브랜치 전략
+
+| 브랜치 | 환경 | 용도 |
+|--------|------|------|
+| `dev` | Development | 로컬 개발 및 테스트 |
+| `stg` | Staging | 프로덕션 유사 환경에서 검증 |
+| `prod` | Production | 실제 서비스 환경 |
+
+`stg` 또는 `prod` 브랜치에 Push하면 GitHub Actions가 자동으로 빌드 → Docker 이미지 생성 → ECR 푸시 → ECS 배포를 수행합니다.
+
+## 프로젝트 구조
+
+```
+CI-CD_practice/
+├── .github/workflows/
+│   └── ci-cd-pipeline.yml    # GitHub Actions 워크플로우
+├── src/
+│   └── main/java/com/step1/  # Spring Boot 애플리케이션
+├── build.gradle               # Gradle 빌드 설정
+├── Dockerfile                 # Docker 이미지 정의
+├── compose.yml                # 로컬 Docker Compose
+└── settings.gradle
+```
+
+## 로컬 실행
+
+```bash
+# Gradle 빌드
+./gradlew build
+
+# 실행 (포트 9090)
+./gradlew bootRun
+
+# 헬스체크
+curl http://localhost:9090/actuator/health
+```
+
+## Docker 실행
+
+```bash
+# 빌드
+./gradlew build
+docker build -t cicd-practice .
+
+# 실행
+docker run -p 9090:9090 cicd-practice
+
+# 또는 Docker Compose
+docker compose up
+```
+
+## CI/CD 워크플로우 상세
+
+### 트리거 조건
+- `stg` 브랜치 push → Staging 환경 배포
+- `prod` 브랜치 push → Production 환경 배포
+
+### 파이프라인 단계
+
+1. **코드 체크아웃** — `actions/checkout@v2`
+2. **JDK 17 설정** — AdoptOpenJDK
+3. **Gradle 빌드** — `./gradlew build`
+4. **Docker 이미지 빌드** — 브랜치명을 태그로 사용
+5. **ECR 로그인 및 푸시** — `aws-actions/amazon-ecr-login`
+6. **ECS 서비스 업데이트** — `force-new-deployment`로 롤링 배포
+
+### 필요한 GitHub Secrets
+
+| Secret | 설명 |
+|--------|------|
+| `AWS_ACCOUNT_ID` | AWS 계정 ID |
+| `AWS_ACCESS_KEY_ID` | IAM 액세스 키 |
+| `AWS_SECRET_ACCESS_KEY` | IAM 시크릿 키 |
+| `AWS_REGION` | AWS 리전 (예: `ap-northeast-2`) |
 
 ## 환경 설정
-- **Dev (개발)**: 로컬 윈도우 환경에서 개발, 테스트
-- **Staging (스테이징)**: 프로덕션과 유사한 환경에서의 추가적인 테스트 및 검증
-- **Prod (프로덕션)**: 실제 사용자가 사용하는 환경
 
----
+각 환경별 Spring 프로파일로 설정을 분리합니다:
 
-# 전략
+- `application-dev.properties` — 로컬 개발
+- `application-stg.properties` — 스테이징
+- `application-prod.properties` — 프로덕션
 
-## STEP 01: 웹 서버 생성
+ECS 환경에서는 `SPRING_PROFILES_ACTIVE` 환경변수로 프로파일을 활성화합니다.
 
-1. **프로젝트 생성 및 초기 설정**:
-   - **Spring Boot 프로젝트 생성**: Spring Initializr([start.spring.io](https://start.spring.io/))를 사용하여 기본 설정을 완료합니다. 필요한 의존성으로는 'Spring Web', 'Spring Boot Actuator'를 선택합니다.
-   - **프로젝트 Import**: 생성된 프로젝트를 vscode 로 가져오고 GRADLE 등 확장프로그램을 설치합니다..
+## 학습 목표
 
-2. **Health-Check Router 구현**:
-   - **Spring Boot Actuator 추가**: `pom.xml` 또는 `build.gradle`에 Spring Boot Actuator 의존성을 추가합니다.
-   - **Health Endpoint 활성화**: `application.properties` 또는 `application.yml`에 Actuator의 health endpoint를 활성화하는 설정을 추가합니다.
-
-3. **개발(dev) 및 운영(prod) 환경 설정**:
-   - **프로파일 설정**: `application-dev.properties`와 `application-prod.properties` 파일을 생성하여 각 환경에 맞는 설정을 정의합니다.
-   - **환경 변수 설정**: AWS EC2 인스턴스에서 환경 변수를 설정하여, 해당 환경에 맞는 프로파일을 활성화합니다. 예를 들어, `SPRING_PROFILES_ACTIVE=prod` 설정을 통해 운영 환경을 활성화할 수 있습니다.
-
-### 환경 설정
-
-- **Dev (개발)**: 로컬 윈도우 환경에서 개발 및 테스트를 진행합니다. IDE를 통해 애플리케이션을 실행하고, `application-dev.properties`에 정의된 설정을 사용합니다.
-- **Staging (스테이징)**: 프로덕션과 유사한 환경에서 추가적인 테스트 및 검증을 위해 `stg` 브랜치와 연동된 자동화된 파이프라인을 통해 배포합니다.
-- **Prod (프로덕션)**: 실제 사용자가 사용하는 환경으로, `prod` 브랜치에서 최종적으로 배포되며, `application-prod.properties`에 정의된 설정을 사용합니다.
-
-## STEP 02: 빌드 환경 구축
-- Docker를 사용한 컨테이너화 및 이미지 빌드
-- Dockerfile 작성 및 로컬 환경에서 테스트
-- GitHub Actions를 활용한 CI/CD 파이프라인 구축
-  - 코드 Push, PR 시 자동 빌드 및 테스트
-  - Lint, Test Coverage 등의 추가적인 검증 단계 포함
-  - 환경(`dev`, `stg`, `prod`)별 파이프라인 구성
-
-## STEP 03: 배포 환경 구축
-- AWS ECR 및 ECS Fargate 사용
-- Docker 이미지 ECR에 업로드
-- ECS Fargate를 통한 서비스 배포 및 관리
-- 보안 및 리소스 관리를 위한 IAM 사용자 설정
-- GitHub Actions의 Secret을 활용한 보안 정보 관리
-
----
-
-# 추가 정보
-- 프로젝트 관련 문서, 설정 파일, 코드 등은 본 GitHub 저장소에서 관리됩니다.
-- 로컬 환경에 너무 많은 다른 서버들이 세팅되어있어서 본 프로젝트의 기본 포트는 9090으로 진행합니다.
-
----
+- [x] Spring Boot 웹 서버 + Actuator 헬스체크
+- [x] Dev / Staging / Production 환경 분리
+- [x] Dockerfile 작성 및 컨테이너화
+- [x] GitHub Actions CI/CD 파이프라인
+- [x] AWS ECR 이미지 레지스트리
+- [x] AWS ECS Fargate 서비스 배포
+- [x] 브랜치별 자동 배포 (stg → Staging, prod → Production)
